@@ -18,13 +18,13 @@ void loop() {
   measurements[count] = sensorValue;
 
   // print the results to the serial monitor:
-  if(count > 100) {
+  if(count >= arraySize - 1) {
     int sum = 0;
     for(int i = 0; i < arraySize; i++){
       sum += measurements[i];
     }
     Serial.print("sensor = ");
-    Serial.print(sum/-100);
+    Serial.print(sum/(-1*arraySize));
     Serial.print("\n");
     count = 0;
   }
