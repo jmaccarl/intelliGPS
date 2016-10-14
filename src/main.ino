@@ -9,6 +9,9 @@
 static const uint32_t GPSBaud = 9600;
 char publishString[1000];
 int count = 0;
+float sensorValue = 0.0;
+int arraySize = 30;
+float measurements[30];
 
 // The TinyGPS++ object
 TinyGPSPlus gps;
@@ -42,8 +45,21 @@ void displayInfo()
 {
   if (gps.location.isValid())
   {
-    sprintf(publishString,"{\"long\":%f,\"lat\":%f,\"power\":%f,\"activity\":%f}",gps.location.lng(),gps.location.lat(),0.0,0.0);
+    // shock sensor val
+    float piezo_val=analogRead(A0);
+    piezo_val = piezo_val / 1023.0 * 5.0;
+    // current sensor val
+    sensorValue = analogRead(A1);
+    measurements[count] = sensorValue;
+
     if (count >= 30) {
+        // avg current reading
+        int sum = 0;
+        for(int i = 0; i < arraySize; i++){
+          sum += measurements[i];
+        }
+        power_val = sum/-30.0
+        sprintf(publishString,"{\"long\":%f,\"lat\":%f,\"power\":%f,\"activity\":%f}",gps.location.lng(),gps.location.lat(),power_val,piezo_val);
         Particle.publish("intelliGPS",publishString, PRIVATE);
         count = 0;
     }
@@ -60,6 +76,5 @@ void displayInfo()
     //Serial.println(publishString);
     count++;
   }
-
 
 }
