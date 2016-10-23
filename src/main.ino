@@ -1,13 +1,9 @@
 
 #include "TinyGPS++.h"
 
-/*
-   This sample sketch demonstrates the normal use of a TinyGPS++ (TinyGPSPlus) object.
-   It requires the use of SoftwareSerial, and assumes that you have a
-   4800-baud serial GPS device hooked up on pins 4(rx) and 3(tx).
-*/
+#define MEAS_INTERVAL 250
 
-#define MEAS_INTERVAL 100
+int GPS_POWER_CNTL_PIN = D6;
 
 static const uint32_t GPSBaud = 9600;
 char gpsString[128];
@@ -27,10 +23,12 @@ void setup()
 {
   Serial1.begin(GPSBaud);
   Serial.begin(9600);
+  pinMode(GPS_POWER_CNTL_PIN, OUTPUT);
 }
 
 void loop()
 {
+  digitalWrite(GPS_POWER_CNTL_PIN, HIGH);
   // This sketch displays information every time a new sentence is correctly encoded.
   while (Serial1.available() > 0)
     if (gps.encode(Serial1.read()))
@@ -50,13 +48,13 @@ void displayInfo()
   if (gps.location.isValid())
   {
 
-    if (count >= 30) {
-        char coord1[100];
-        sprintf(coord1, "%f", (gps.location.lat(), gps.location.isValid(), 11, 6));
-        char coord2[100];
-        sprintf(coord2, "%f", (gps.location.lng(), gps.location.isValid(), 12, 6));        
+    if (count >= 60) {
+        //char coord1[100];
+        //sprintf(coord1, "%f", (gps.location.lat(), gps.location.isValid(), 11, 6));
+        //char coord2[100];
+        //sprintf(coord2, "%f", (gps.location.lng(), gps.location.isValid(), 12, 6));        
 
-        sprintf(gpsString, "%f,%f", coord1, coord2);
+        sprintf(gpsString, "%f,%f", gps.location.lat(), gps.location.lng());
         Serial.print("GPS coordinates: ");
         Serial.println(gpsString);
         Particle.publish("gps-coordinates",gpsString, PRIVATE);
@@ -65,9 +63,9 @@ void displayInfo()
   }
   else
   {
-    if (count >= 30){
+    if (count >= 60){
         Serial.println("no data");
-        Particle.publish("gps-coordinates", "no data", PRIVATE);
+        //Particle.publish("gps-coordinates", "no data", PRIVATE);
         count = 0;
     }
   }
@@ -85,11 +83,11 @@ void displayInfo()
 
   if (meas_count >= MEAS_INTERVAL - 1) {
     // avg current reading
-    int sum = 0;
+    float sum = 0;
     for(int i = 0; i < MEAS_INTERVAL; i++){
       sum += measurements[i];
     }
-    power_val = -1*sum/((float)MEAS_INTERVAL);
+    power_val = sum/((float)MEAS_INTERVAL);
     sprintf(powerString, "%f", power_val);
     sprintf(activityString, "%f", piezo_val);
     Particle.publish("gps-power",powerString, PRIVATE);
