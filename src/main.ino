@@ -42,12 +42,14 @@ void loop()
 
   if (stringComplete) {
     if (gps.encode(inputString)) {
-      displayInfo();
+      displayInfo_gps();
       // clear the string:
       inputString = "";
       stringComplete = false;
     }
   }
+
+  displayInfo_sensors();
   
   if (millis() > 60000 && gps.charsProcessed() < 10)
   {
@@ -72,7 +74,7 @@ void serialEvent() {
   }
 }
 
-void displayInfo()
+void displayInfo_gps()
 {
   if (gps.location.isValid())
   {
@@ -98,7 +100,10 @@ void displayInfo()
         count = 0;
     }
   }
+  }
 
+void displayInfo_sensors()
+{
   // shock sensor val
   float piezo_val = analogRead(A0);
   piezo_val = piezo_val / 1024.0 * 5.0;
