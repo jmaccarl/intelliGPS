@@ -16,6 +16,10 @@ float sensorValue = 0.0;
 float measurements[MEAS_INTERVAL];
 int power_val;
 
+// serialEventRelated
+String inputString  = ""
+boolean stringComplete = false;
+
 // The TinyGPS++ object
 TinyGPSPlus gps;
 
@@ -24,15 +28,26 @@ void setup()
   Serial1.begin(GPSBaud);
   Serial.begin(9600);
   pinMode(GPS_POWER_CNTL_PIN, OUTPUT);
+  // reserve 200 bytes for the inputString:
+  inputString.reserve(200);
 }
 
 void loop()
 {
   digitalWrite(GPS_POWER_CNTL_PIN, HIGH);
   // This sketch displays information every time a new sentence is correctly encoded.
-  while (Serial1.available() > 0)
-    if (gps.encode(Serial1.read()))
+  //while (Serial1.available() > 0)
+    //if (gps.encode(Serial1.read()))
+      //displayInfo();
+
+  if (stringComplete) {
+    if (gps.encode(inputString)) {
       displayInfo();
+      // clear the string:
+      inputString = "";
+      stringComplete = false;
+    }
+  }
   
   if (millis() > 60000 && gps.charsProcessed() < 10)
   {
@@ -41,6 +56,20 @@ void loop()
       while(1);
   }
   
+}
+
+void serialEvent() {
+  while (Serial1.available()) {
+    // get the new byte:
+    char inChar = (char)Serial1.read();
+    // add it to the inputString:
+    inputString += inChar;
+    // if the incoming character is a newline, set a flag
+    // so the main loop can do something about it:
+    if (inChar == '\n') {
+      stringComplete = true;
+    }
+  }
 }
 
 void displayInfo()
