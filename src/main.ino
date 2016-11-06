@@ -100,7 +100,8 @@ void displayInfo_gps()
         count = 0;
     }
   }
-  }
+  count++;
+}
 
 void displayInfo_sensors()
 {
@@ -130,6 +131,5 @@ void displayInfo_sensors()
   }
       
   meas_count++;
-  count++;
 
 }
