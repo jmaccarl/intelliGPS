@@ -41,11 +41,14 @@ void loop()
       //displayInfo();
 
   if (stringComplete) {
-    if (gps.encode(inputString)) {
-      displayInfo_gps();
-      // clear the string:
-      inputString = "";
-      stringComplete = false;
+    for (unsigned i=0; i<inputString.length(); ++i)
+      {
+      if (gps.encode(inputString.at(i))) {
+        displayInfo_gps();
+        // clear the string:
+        inputString = "";
+        stringComplete = false;
+      }
     }
   }
 
