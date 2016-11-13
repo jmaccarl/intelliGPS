@@ -17,8 +17,10 @@ float measurements[MEAS_INTERVAL];
 int power_val;
 
 // serialEventRelated
-String inputString  = ""
-boolean stringComplete = false;
+//String inputString  = "";
+std::string inputString = "";
+//String inputString = "";
+bool stringComplete = false;
 
 // The TinyGPS++ object
 TinyGPSPlus gps;
@@ -53,14 +55,14 @@ void loop()
   }
 
   displayInfo_sensors();
-  
+
   if (millis() > 60000 && gps.charsProcessed() < 10)
   {
       Serial.println(F("No GPS detected: check wiring."));
       Particle.publish("gps-coordinates", "fail to connect", PRIVATE);
       while(1);
   }
-  
+
 }
 
 void serialEvent() {
@@ -86,7 +88,7 @@ void displayInfo_gps()
         //char coord1[100];
         //sprintf(coord1, "%f", (gps.location.lat(), gps.location.isValid(), 11, 6));
         //char coord2[100];
-        //sprintf(coord2, "%f", (gps.location.lng(), gps.location.isValid(), 12, 6));        
+        //sprintf(coord2, "%f", (gps.location.lng(), gps.location.isValid(), 12, 6));
 
         sprintf(gpsString, "%f,%f", gps.location.lat(), gps.location.lng());
         Serial.print("GPS coordinates: ");
@@ -132,7 +134,7 @@ void displayInfo_sensors()
     Particle.publish("activity-level",activityString, PRIVATE);
     meas_count = 0;
   }
-      
+
   meas_count++;
 
 }
