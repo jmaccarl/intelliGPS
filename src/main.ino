@@ -1,7 +1,7 @@
 
 #include "TinyGPS++.h"
 
-#define MEAS_INTERVAL 250
+#define MEAS_INTERVAL 512
 
 int GPS_POWER_CNTL_PIN = D6;
 
@@ -14,7 +14,7 @@ int count = 0;
 int meas_count = 0;
 float sensorValue = 0.0;
 float measurements[MEAS_INTERVAL];
-int power_val;
+float power_val;
 
 // serialEventRelated
 //String inputString  = "";
@@ -43,25 +43,27 @@ void loop()
       //displayInfo();
 
   if (stringComplete) {
+    //Serial.println("String Complete!");
     for (unsigned i=0; i<inputString.length(); ++i)
-      {
+    {
       if (gps.encode(inputString.at(i))) {
         displayInfo_gps();
-        // clear the string:
-        inputString = "";
-        stringComplete = false;
       }
     }
+    // clear the string:
+    inputString = "";
+    stringComplete = false;
   }
 
   displayInfo_sensors();
-
+  /*
   if (millis() > 60000 && gps.charsProcessed() < 10)
   {
       Serial.println(F("No GPS detected: check wiring."));
       Particle.publish("gps-coordinates", "fail to connect", PRIVATE);
       while(1);
   }
+  */
 
 }
 
@@ -74,6 +76,8 @@ void serialEvent() {
     // if the incoming character is a newline, set a flag
     // so the main loop can do something about it:
     if (inChar == '\n') {
+      //Serial.println("newline reached");
+      //Serial.println(inputString.c_str());
       stringComplete = true;
     }
   }
@@ -85,10 +89,6 @@ void displayInfo_gps()
   {
 
     if (count >= 60) {
-        //char coord1[100];
-        //sprintf(coord1, "%f", (gps.location.lat(), gps.location.isValid(), 11, 6));
-        //char coord2[100];
-        //sprintf(coord2, "%f", (gps.location.lng(), gps.location.isValid(), 12, 6));
 
         sprintf(gpsString, "%f,%f", gps.location.lat(), gps.location.lng());
         Serial.print("GPS coordinates: ");
@@ -113,12 +113,8 @@ void displayInfo_sensors()
   // shock sensor val
   float piezo_val = analogRead(A0);
   piezo_val = piezo_val / 1024.0 * 5.0;
-  Serial.print("Vibration val: ");
-  Serial.println(piezo_val);
   // current sensor val
   sensorValue = analogRead(A1);
-  Serial.print("Power val: ");
-  Serial.println(sensorValue);
   measurements[meas_count] = sensorValue;
 
   if (meas_count >= MEAS_INTERVAL - 1) {
@@ -130,8 +126,12 @@ void displayInfo_sensors()
     power_val = sum/((float)MEAS_INTERVAL);
     sprintf(powerString, "%f", power_val);
     sprintf(activityString, "%f", piezo_val);
-    Particle.publish("gps-power",powerString, PRIVATE);
+    //Particle.publish("gps-power",powerString, PRIVATE);
+    Serial.print("Power val: ");
+    Serial.println(powerString);
     Particle.publish("activity-level",activityString, PRIVATE);
+    Serial.print("Activity val: ");
+    Serial.println(activityString);
     meas_count = 0;
   }
 
