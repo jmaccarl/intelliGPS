@@ -12,9 +12,8 @@ char activityString[128];
 
 int count = 0;
 int meas_count = 0;
-float sensorValue = 0.0;
-float measurements[MEAS_INTERVAL];
-float power_val;
+float pow_measurements[MEAS_INTERVAL];
+float vib_measurements[MEAS_INTERVAL];
 
 // serialEventRelated
 //String inputString  = "";
@@ -56,11 +55,11 @@ void loop()
   }
 
   displayInfo_sensors();
-  /*
+ /* 
   if (millis() > 60000 && gps.charsProcessed() < 10)
   {
       Serial.println(F("No GPS detected: check wiring."));
-      Particle.publish("gps-coordinates", "fail to connect", PRIVATE);
+      //Particle.publish("gps-coordinates", "fail to connect", PRIVATE);
       while(1);
   }
   */
@@ -76,8 +75,8 @@ void serialEvent() {
     // if the incoming character is a newline, set a flag
     // so the main loop can do something about it:
     if (inChar == '\n') {
-      //Serial.println("newline reached");
-      //Serial.println(inputString.c_str());
+      Serial.println("newline reached");
+      Serial.println(inputString.c_str());
       stringComplete = true;
     }
   }
@@ -114,18 +113,27 @@ void displayInfo_sensors()
   float piezo_val = analogRead(A0);
   piezo_val = piezo_val / 1024.0 * 5.0;
   // current sensor val
-  sensorValue = analogRead(A1);
-  measurements[meas_count] = sensorValue;
+  float current_val = analogRead(A1);
+  pow_measurements[meas_count] = current_val;
+  vib_measurements[meas_count] = piezo_val; 
 
   if (meas_count >= MEAS_INTERVAL - 1) {
     // avg current reading
-    float sum = 0;
+    float power_sum = 0;
+    float activity_sum = 0;
     for(int i = 0; i < MEAS_INTERVAL; i++){
-      sum += measurements[i];
+      power_sum += pow_measurements[i];
+      activity_sum += vib_measurements[i];
     }
-    power_val = sum/((float)MEAS_INTERVAL);
+    float power_val = power_sum/((float)MEAS_INTERVAL);
+    float activity_val = activity_sum/((float)MEAS_INTERVAL);
     sprintf(powerString, "%f", power_val);
-    sprintf(activityString, "%f", piezo_val);
+    sprintf(activityString, "%f", activity_val);
+
+    //if(activity_val < 0.4){
+    //  digitalWrite(GPS_POWER_CNTL_PIN, LOW);
+    //}
+
     //Particle.publish("gps-power",powerString, PRIVATE);
     Serial.print("Power val: ");
     Serial.println(powerString);
