@@ -16,9 +16,7 @@ float pow_measurements[MEAS_INTERVAL];
 float vib_measurements[MEAS_INTERVAL];
 
 // serialEventRelated
-//String inputString  = "";
 std::string inputString = "";
-//String inputString = "";
 bool stringComplete = false;
 
 // The TinyGPS++ object
@@ -27,19 +25,16 @@ TinyGPSPlus gps;
 void setup()
 {
   Serial1.begin(GPSBaud);
+
   Serial.begin(9600);
   pinMode(GPS_POWER_CNTL_PIN, OUTPUT);
-  // reserve 200 bytes for the inputString:
-  inputString.reserve(200);
+  // reserve 256 bytes for the inputString:
+  inputString.reserve(256);
 }
 
 void loop()
 {
   digitalWrite(GPS_POWER_CNTL_PIN, HIGH);
-  // This sketch displays information every time a new sentence is correctly encoded.
-  //while (Serial1.available() > 0)
-    //if (gps.encode(Serial1.read()))
-      //displayInfo();
 
   if (stringComplete) {
     //Serial.println("String Complete!");
@@ -66,7 +61,7 @@ void loop()
 
 }
 
-void serialEvent() {
+void serialEvent1() {
   while (Serial1.available()) {
     // get the new byte:
     char inChar = (char)Serial1.read();
@@ -75,8 +70,6 @@ void serialEvent() {
     // if the incoming character is a newline, set a flag
     // so the main loop can do something about it:
     if (inChar == '\n') {
-      Serial.println("newline reached");
-      Serial.println(inputString.c_str());
       stringComplete = true;
     }
   }
@@ -100,7 +93,6 @@ void displayInfo_gps()
   {
     if (count >= 60){
         Serial.println("no data");
-        //Particle.publish("gps-coordinates", "no data", PRIVATE);
         count = 0;
     }
   }
@@ -137,7 +129,7 @@ void displayInfo_sensors()
     //Particle.publish("gps-power",powerString, PRIVATE);
     Serial.print("Power val: ");
     Serial.println(powerString);
-    Particle.publish("activity-level",activityString, PRIVATE);
+    //Particle.publish("activity-level",activityString, PRIVATE);
     Serial.print("Activity val: ");
     Serial.println(activityString);
     meas_count = 0;
