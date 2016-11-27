@@ -15,6 +15,9 @@ int meas_count = 0;
 float pow_measurements[MEAS_INTERVAL];
 float vib_measurements[MEAS_INTERVAL];
 
+float power_total = 0.0;
+int power_count = 0;
+
 // serialEventRelated
 std::string inputString = "";
 bool stringComplete = false;
@@ -30,11 +33,15 @@ void setup()
   pinMode(GPS_POWER_CNTL_PIN, OUTPUT);
   // reserve 256 bytes for the inputString:
   inputString.reserve(256);
+
+  // Wait for GPS to warm up
+  digitalWrite(GPS_POWER_CNTL_PIN, HIGH);
+  // Delay for 10 seconds
+  delay(10000);
 }
 
 void loop()
 {
-  digitalWrite(GPS_POWER_CNTL_PIN, HIGH);
 
   if (stringComplete) {
     //Serial.println("String Complete!");
@@ -72,6 +79,15 @@ void serialEvent1() {
     if (inChar == '\n') {
       stringComplete = true;
     }
+  }
+}
+
+void serialEvent() {
+  float average_power = power_total/(float)power_count;
+  Serial.print("Average power: ");
+  Serial.println(average_power);
+  while (Serial.available()) {
+    Serial.read();
   }
 }
 
@@ -122,9 +138,17 @@ void displayInfo_sensors()
     sprintf(powerString, "%f", power_val);
     sprintf(activityString, "%f", activity_val);
 
-    //if(activity_val < 0.4){
-    //  digitalWrite(GPS_POWER_CNTL_PIN, LOW);
-    //}
+    // Turn GPS power on/off depending on activity val
+    if(activity_val < 0.37){
+      Serial.println("Powering down GPS!");
+      digitalWrite(GPS_POWER_CNTL_PIN, LOW);
+    }else{
+      Serial.println("Powering up GPS!");
+      digitalWrite(GPS_POWER_CNTL_PIN, HIGH);
+    }
+
+    power_total += power_val;
+    power_count++;
 
     //Particle.publish("gps-power",powerString, PRIVATE);
     Serial.print("Power val: ");
