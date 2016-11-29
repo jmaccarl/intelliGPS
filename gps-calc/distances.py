@@ -1,8 +1,8 @@
 import csv
 import numpy
 
-gps_data_file = 'test-data/gps-coordinates-standstill.csv'
-gps_distance_file = 'test-data/distance-change-standstill.csv'
+gps_data_file = 'test-data/gps_coordinates_loop.csv'
+gps_distance_file = 'test-data/distance_change_loop.csv'
 
 def get_coordinates(row):
     coordinates = row[2].split(',')
