@@ -37,7 +37,10 @@ void setup()
   // Wait for GPS to warm up
   digitalWrite(GPS_POWER_CNTL_PIN, HIGH);
   // Delay for 10 seconds
-  delay(10000);
+  FuelGauge fuel;
+  Serial.println("Current battery charge level: ");
+  Serial.println( fuel.getSoC() );
+
 }
 
 void loop()
@@ -139,9 +142,9 @@ void displayInfo_sensors()
     sprintf(activityString, "%f", activity_val);
 
     // Turn GPS power on/off depending on activity val
-    if(activity_val < 0.37){
+    if(millis() > 180000 && activity_val < 0.34){
       Serial.println("Powering down GPS!");
-      digitalWrite(GPS_POWER_CNTL_PIN, LOW);
+      //digitalWrite(GPS_POWER_CNTL_PIN, LOW);
     }else{
       Serial.println("Powering up GPS!");
       digitalWrite(GPS_POWER_CNTL_PIN, HIGH);
