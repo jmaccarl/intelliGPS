@@ -3,6 +3,8 @@
 
 #define MEAS_INTERVAL 512
 
+#define DEBUG
+
 int GPS_POWER_CNTL_PIN = D6;
 
 static const uint32_t GPSBaud = 9600;
@@ -35,8 +37,9 @@ void setup()
   inputString.reserve(256);
 
   // Wait for GPS to warm up
-  digitalWrite(GPS_POWER_CNTL_PIN, HIGH);
-  // Delay for 10 seconds
+  //digitalWrite(GPS_POWER_CNTL_PIN, HIGH);
+  
+  // Get the battery charge level
   FuelGauge fuel;
   Serial.println("Current battery charge level: ");
   Serial.println( fuel.getSoC() );
@@ -60,14 +63,14 @@ void loop()
   }
 
   displayInfo_sensors();
- /* 
-  if (millis() > 60000 && gps.charsProcessed() < 10)
+ 
+  
+  if (millis() > 120000 && gps.charsProcessed() < 10)
   {
-      Serial.println(F("No GPS detected: check wiring."));
-      //Particle.publish("gps-coordinates", "fail to connect", PRIVATE);
+      Serial.println("No GPS detected: check wiring.");
       while(1);
   }
-  */
+  
 
 }
 
@@ -85,6 +88,8 @@ void serialEvent1() {
   }
 }
 
+// Cannot use serialEvent(), interferes with the GPS readings
+/*
 void serialEvent() {
   float average_power = power_total/(float)power_count;
   Serial.print("Average power: ");
@@ -93,12 +98,13 @@ void serialEvent() {
     Serial.read();
   }
 }
+*/
 
 void displayInfo_gps()
 {
   if (gps.location.isValid())
   {
-
+    Serial.println("Found valid GPS data");
     if (count >= 60) {
 
         sprintf(gpsString, "%f,%f", gps.location.lat(), gps.location.lng());
@@ -112,6 +118,12 @@ void displayInfo_gps()
   {
     if (count >= 60){
         Serial.println("no data");
+#ifdef DEBUG
+        Serial.print("Sentences that failed checksum=");
+        Serial.println(gps.failedChecksum());
+        Serial.print("Num sentences with fix: ");
+        Serial.println(gps.sentencesWithFix());
+#endif
         count = 0;
     }
   }
