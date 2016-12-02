@@ -1,9 +1,18 @@
 
 #include "TinyGPS++.h"
 
+//#define MEAS_INTERVAL 2048
 #define MEAS_INTERVAL 512
+//#define GPS_COUNT 120
+#define GPS_COUNT 60
+#define STARTUP_INT 600000
 
+// Debug mode for more error checking statements
 #define DEBUG
+
+// Different modes of operation, only define one
+//#define REG_MODE
+#define INT_MODE
 
 int GPS_POWER_CNTL_PIN = D6;
 
@@ -19,6 +28,9 @@ float vib_measurements[MEAS_INTERVAL];
 
 float power_total = 0.0;
 int power_count = 0;
+float prev_lat = 0.0;
+float prev_long = 0.0;
+
 
 // serialEventRelated
 std::string inputString = "";
@@ -74,6 +86,7 @@ void loop()
 
 }
 
+// NOTE: Cannot use serialEvent(), interferes with the GPS readings
 void serialEvent1() {
   while (Serial1.available()) {
     // get the new byte:
@@ -88,35 +101,37 @@ void serialEvent1() {
   }
 }
 
-// Cannot use serialEvent(), interferes with the GPS readings
-/*
-void serialEvent() {
-  float average_power = power_total/(float)power_count;
-  Serial.print("Average power: ");
-  Serial.println(average_power);
-  while (Serial.available()) {
-    Serial.read();
-  }
-}
-*/
 
 void displayInfo_gps()
 {
   if (gps.location.isValid())
   {
-    Serial.println("Found valid GPS data");
-    if (count >= 60) {
-
-        sprintf(gpsString, "%f,%f", gps.location.lat(), gps.location.lng());
+    //Serial.println("Found valid GPS data");
+    if (count >= GPS_COUNT) {
+        float cur_lat = gps.location.lat();
+        float cur_long = gps.location.lng(); 
+        sprintf(gpsString, "%f,%f", cur_lat, cur_long);
         Serial.print("GPS coordinates: ");
         Serial.println(gpsString);
-        Particle.publish("gps-coordinates",gpsString, PRIVATE);
+        /*
+        if (prev_lat == 0.0){
+          prev_lat = cur_lat;
+          prev_long = cur_long;;
+          Particle.publish("gps-coordinates",gpsString, PRIVATE);
+        } else {
+          if (TinyGPSPlus::distanceBetween(
+            cur_lat, cur_long, prev_lat, prev_long) > 3){ */
+            //Particle.publish("gps-coordinates", gpsString, PRIVATE);
+        /*  }
+          prev_lat = cur_lat;
+          prev_long = cur_long;
+        } */
         count = 0;
     }
   }
   else
   {
-    if (count >= 60){
+    if (count >= GPS_COUNT){
         Serial.println("no data");
 #ifdef DEBUG
         Serial.print("Sentences that failed checksum=");
@@ -148,26 +163,51 @@ void displayInfo_sensors()
       power_sum += pow_measurements[i];
       activity_sum += vib_measurements[i];
     }
+
     float power_val = power_sum/((float)MEAS_INTERVAL);
     float activity_val = activity_sum/((float)MEAS_INTERVAL);
     sprintf(powerString, "%f", power_val);
     sprintf(activityString, "%f", activity_val);
 
     // Turn GPS power on/off depending on activity val
-    if(millis() > 180000 && activity_val < 0.34){
+#ifdef REG_MODE
+    if (millis() > STARTUP_INT && activity_val < 0.37) {
       Serial.println("Powering down GPS!");
-      //digitalWrite(GPS_POWER_CNTL_PIN, LOW);
-    }else{
+      digitalWrite(GPS_POWER_CNTL_PIN, LOW);
+    } else {
       Serial.println("Powering up GPS!");
       digitalWrite(GPS_POWER_CNTL_PIN, HIGH);
     }
+#endif
 
-    power_total += power_val;
-    power_count++;
+    //Turn GPS power on/off according to some interval
+#ifdef INT_MODE
+    if ((millis() > STARTUP_INT) && (millis() % 60000 < 30000)) {
+      Serial.println("Powering down GPS!");
+      digitalWrite(GPS_POWER_CNTL_PIN, LOW);
+    } else {
+      Serial.println("Powering up GPS!");
+      digitalWrite(GPS_POWER_CNTL_PIN, HIGH);
+    }
+#endif
 
-    //Particle.publish("gps-power",powerString, PRIVATE);
+    // Funtionality to only enable after the starting interval has elapsed
+    if(millis() > STARTUP_INT) {
+      // Don't publish power until after interval has passed
+      Particle.publish("gps-power",powerString, PRIVATE);
+
+      power_total += power_val;
+      power_count++;
+      // Print average total power so far
+      Serial.print("Average power: ");
+      Serial.println(power_total/(float)power_count);
+    }
+
+    // Print current average power val over the last interval
     Serial.print("Power val: ");
     Serial.println(powerString);
+
+    // Print current average activity val
     //Particle.publish("activity-level",activityString, PRIVATE);
     Serial.print("Activity val: ");
     Serial.println(activityString);
