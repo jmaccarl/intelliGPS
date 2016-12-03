@@ -3,16 +3,23 @@
 
 //#define MEAS_INTERVAL 2048
 #define MEAS_INTERVAL 512
-//#define GPS_COUNT 120
 #define GPS_COUNT 60
 #define STARTUP_INT 600000
+
+// Define the activity threshold for powering off
+#define ACT_THRESH .37
 
 // Debug mode for more error checking statements
 #define DEBUG
 
+// Mode for not transmitting stale values
+//#define NO_STALE
+
 // Different modes of operation, only define one
 //#define REG_MODE
-#define INT_MODE
+//#define INT_MODE
+//#define FAKE_MODE
+#define ACT_MODE
 
 int GPS_POWER_CNTL_PIN = D6;
 
@@ -31,6 +38,7 @@ int power_count = 0;
 float prev_lat = 0.0;
 float prev_long = 0.0;
 
+bool publishGPS = false;
 
 // serialEventRelated
 std::string inputString = "";
@@ -82,7 +90,7 @@ void loop()
       Serial.println("No GPS detected: check wiring.");
       while(1);
   }
-  
+ 
 
 }
 
@@ -106,26 +114,36 @@ void displayInfo_gps()
 {
   if (gps.location.isValid())
   {
-    //Serial.println("Found valid GPS data");
     if (count >= GPS_COUNT) {
         float cur_lat = gps.location.lat();
         float cur_long = gps.location.lng(); 
         sprintf(gpsString, "%f,%f", cur_lat, cur_long);
         Serial.print("GPS coordinates: ");
         Serial.println(gpsString);
-        /*
+#ifdef NO_STALE
         if (prev_lat == 0.0){
           prev_lat = cur_lat;
           prev_long = cur_long;;
           Particle.publish("gps-coordinates",gpsString, PRIVATE);
         } else {
           if (TinyGPSPlus::distanceBetween(
-            cur_lat, cur_long, prev_lat, prev_long) > 3){ */
-            //Particle.publish("gps-coordinates", gpsString, PRIVATE);
-        /*  }
+            cur_lat, cur_long, prev_lat, prev_long) > 3){
+#endif
+         
+#ifdef FAKE_MODE
+         if (publishGPS){
+            Particle.publish("gps-coordinates", gpsString, PRIVATE);
+         }
+#else
+         Particle.publish("gps-coordinates", gpsString, PRIVATE);
+#endif
+                  
+#ifdef NO_STALE
+          }
           prev_lat = cur_lat;
           prev_long = cur_long;
-        } */
+        }
+#endif
         count = 0;
     }
   }
@@ -171,7 +189,7 @@ void displayInfo_sensors()
 
     // Turn GPS power on/off depending on activity val
 #ifdef REG_MODE
-    if (millis() > STARTUP_INT && activity_val < 0.37) {
+    if (millis() > STARTUP_INT && activity_val < ACT_THRESH) {
       Serial.println("Powering down GPS!");
       digitalWrite(GPS_POWER_CNTL_PIN, LOW);
     } else {
@@ -191,11 +209,25 @@ void displayInfo_sensors()
     }
 #endif
 
+#ifdef FAKE_MODE
+    digitalWrite(GPS_POWER_CNTL_PIN, HIGH);
+    if (millis() > STARTUP_INT && activity_val < ACT_THRESH) {
+      Serial.println("Powering down GPS!");
+      publishGPS = false;
+    } else {
+      Serial.println("Powering up GPS!");
+      publishGPS = true;
+    }
+#endif
+
+#ifdef ACT_MODE
+    digitalWrite(GPS_POWER_CNTL_PIN, HIGH);
+#endif
+
     // Funtionality to only enable after the starting interval has elapsed
     if(millis() > STARTUP_INT) {
       // Don't publish power until after interval has passed
-      Particle.publish("gps-power",powerString, PRIVATE);
-
+      //Particle.publish("gps-power",powerString, PRIVATE);
       power_total += power_val;
       power_count++;
       // Print average total power so far
@@ -208,7 +240,9 @@ void displayInfo_sensors()
     Serial.println(powerString);
 
     // Print current average activity val
-    //Particle.publish("activity-level",activityString, PRIVATE);
+#ifdef ACT_MODE
+    Particle.publish("activity-level",activityString, PRIVATE);
+#endif
     Serial.print("Activity val: ");
     Serial.println(activityString);
     meas_count = 0;
