@@ -1,13 +1,21 @@
+/*
+ * intelliGPS main project code
+ * Includes different modes for various
+ * tests we performed
+ * 
+ * Authors: Jenna MacCarley & Aditya Ranganath
+ */
+
 
 #include "TinyGPS++.h"
 
 //#define MEAS_INTERVAL 2048
-#define MEAS_INTERVAL 512
+#define MEAS_INTERVAL 700
 #define GPS_COUNT 60
 #define STARTUP_INT 600000
 
 // Define the activity threshold for powering off
-#define ACT_THRESH .37
+#define ACT_THRESH .4
 
 // Debug mode for more error checking statements
 #define DEBUG
@@ -19,7 +27,8 @@
 //#define REG_MODE
 //#define INT_MODE
 //#define FAKE_MODE
-#define ACT_MODE
+//#define ACT_MODE
+#define PWR_ON
 
 int GPS_POWER_CNTL_PIN = D6;
 
@@ -84,13 +93,13 @@ void loop()
 
   displayInfo_sensors();
  
-  
+/*  
   if (millis() > 120000 && gps.charsProcessed() < 10)
   {
       Serial.println("No GPS detected: check wiring.");
       while(1);
   }
- 
+ */
 
 }
 
@@ -221,13 +230,19 @@ void displayInfo_sensors()
 #endif
 
 #ifdef ACT_MODE
+    digitalWrite(GPS_POWER_CNTL_PIN, LOW);
+#endif
+    
+#ifdef PWR_ON
     digitalWrite(GPS_POWER_CNTL_PIN, HIGH);
 #endif
 
     // Funtionality to only enable after the starting interval has elapsed
     if(millis() > STARTUP_INT) {
       // Don't publish power until after interval has passed
-      //Particle.publish("gps-power",powerString, PRIVATE);
+#ifdef INT_MODE
+      Particle.publish("gps-power",powerString, PRIVATE);
+#endif
       power_total += power_val;
       power_count++;
       // Print average total power so far
