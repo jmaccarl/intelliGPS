@@ -1,8 +1,7 @@
 import csv
 import numpy
-
-gps_data_file = 'test-data/gps_coordinates_loop.csv'
-gps_distance_file = 'test-data/distance_change_loop.csv'
+import argparse
+import sys
 
 def get_coordinates(row):
     coordinates = row[2].split(',')
@@ -13,21 +12,26 @@ def get_coordinates(row):
 def get_euclidean_distance(a,b):
     return numpy.linalg.norm(a-b)
 
-def gps_distances():
+def gps_distances(gps_data_file):
     read_file = open(gps_data_file,'rb')
-    write_file = open(gps_distance_file,'w')
     reader = list(csv.reader(read_file))
-    writer = csv.writer(write_file)
-    writer.writerow(['Euclidean Distance Between Successive GPS Coordinates'])
     curr_coordinates = None
     prev_coordinates = get_coordinates(reader[0])
     reader = reader[1:]
+    total_dist = 0
     for row in reader:
         curr_coordinates = get_coordinates(row)
         distance = get_euclidean_distance(curr_coordinates,prev_coordinates)
-        writer.writerow([distance])
         prev_coordinates = curr_coordinates
+        total_dist += distance
     read_file.close()
-    write_file.close()
+    print "Total Dist: ", total_dist
 
-gps_distances()
+def main():
+    if sys.argc < 2:
+        print "GPS data file not provided"
+        return
+
+    gps_distances(sys.argv[1])
+
+main()
